@@ -32,7 +32,7 @@ If Overlay permission is missing, the app opens the Android overlay settings scr
 
 ## Optional Accessibility
 
-Accessibility can be enabled manually when the deployment needs stronger foreground detection.
+Accessibility appears as an optional integration point and is not required by the lightweight mode. The current service declares the Android component, but its event callbacks are empty and it does not provide stronger foreground detection in this snapshot.
 
 ```text
 Settings -> Accessibility -> Barz Kiosk Mode
@@ -52,4 +52,3 @@ Without a valid PIN, the target app is relaunched automatically.
 ## Limitations
 
 This is a usability-focused kiosk mode. Because it does not use Device Owner, Android still allows system-level escape paths depending on device model, Android version, OEM settings, and physical buttons.
-

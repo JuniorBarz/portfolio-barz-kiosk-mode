@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -22,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.barz.kioskmode"
+        applicationId = "dev.juniorbarz.portfolio.kiosk"
         minSdk = kioskMinSdk
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -31,8 +30,7 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Portfolio builds use the debug key for local evaluation only.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -41,4 +39,3 @@ android {
 flutter {
     source = "../.."
 }
-

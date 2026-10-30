@@ -1,62 +1,48 @@
 # Barz Kiosk Mode
 
-Aplicação Flutter/Android para transformar dispositivos dedicados em uma experiência de quiosque leve, com inicialização automática, seleção do aplicativo permitido e recuperação do estado de execução.
+Demonstração Flutter/Android de um quiosque leve para dispositivos dedicados: seleciona um aplicativo permitido, inicia a experiência após o boot e tenta recuperar o foco quando o usuário sai do fluxo esperado.
 
-> Edição independente para avaliação de portfólio. Não contém configuração, infraestrutura ou dados de produção.
+> Edição independente de portfólio. Não contém configuração, infraestrutura, credencial ou dado de produção.
 
 ## Problema
 
-Dispositivos dedicados precisam iniciar sempre no aplicativo correto, reduzir saídas acidentais e continuar utilizáveis quando permissões especiais não estão disponíveis. O desafio é combinar uma interface simples em Flutter com recursos nativos do Android sem prometer o mesmo nível de bloqueio de um equipamento provisionado como Device Owner.
+Tablets e terminais de autoatendimento precisam voltar rapidamente ao aplicativo correto, inclusive após reinicializações ou falhas. Sem provisionamento administrativo do Android, porém, um aplicativo comum não consegue oferecer o mesmo bloqueio de um equipamento gerenciado.
 
-## Solução
+## Solução implementada
 
-O projeto oferece dois níveis de operação:
+Esta edição implementa somente o modo leve. A camada Flutter cuida da configuração, do estado e da interface; a camada Kotlin integra launcher, boot, monitoramento do aplicativo em primeiro plano, watchdog e permissões concedidas pelo usuário.
 
-- modo leve, baseado em launcher, monitoramento e recuperação;
-- integração opcional com recursos administrativos quando o dispositivo foi provisionado adequadamente.
+O método nativo informa `isDeviceOwner = false`. Device Owner aparece apenas como contexto técnico e não é uma funcionalidade disponível neste snapshot.
 
-O aplicativo valida o pacote escolhido, acompanha permissões necessárias, inicia o alvo configurado e entra em modo seguro quando uma etapa nativa falha.
+## Tecnologias
 
-## Principais funcionalidades
+- Flutter e Dart para interface, estado e regras de configuração;
+- Kotlin e Android SDK para boot, launcher, serviços e permissões;
+- Method Channel para comunicação tipada entre Flutter e Android;
+- testes Flutter e testes do exportador fail-closed.
 
-- catálogo de aplicativos instalados;
-- seleção e validação do aplicativo permitido;
+## Funcionalidades demonstradas
+
+- catálogo e seleção de aplicativos instalados;
+- validação do pacote escolhido;
 - inicialização após o boot;
-- launcher dedicado;
-- watchdog e recuperação de foco;
-- PIN local armazenado com salt e hash;
-- bloqueio progressivo após tentativas inválidas;
-- tela de diagnóstico de permissões;
-- modo seguro para falhas nativas.
+- launcher dedicado e recuperação de foco em modo leve;
+- watchdog, diagnóstico de permissões e modo seguro para falhas nativas;
+- PIN local armazenado com salt e hash, sem texto puro;
+- interface de configuração e troca de PIN.
 
-## Arquitetura
+## Arquitetura e decisões
 
-- **Flutter/Dart:** estado, regras de configuração, PIN e interface.
-- **Method Channel:** contrato explícito entre Flutter e Android.
-- **Kotlin/Android:** launcher, receiver de boot, watchdog, overlay opcional e integração com permissões especiais.
-- **Testes:** regras de estado, PIN, transições, validação de pacote e widgets.
+- **Flutter/Dart:** mantém o estado observável e apresenta falhas nativas de forma explícita.
+- **Method Channel:** limita a fronteira entre interface e recursos Android.
+- **Kotlin/Android:** executa integrações que não existem diretamente no Flutter.
+- **Identidade de portfólio:** o APK usa `dev.juniorbarz.portfolio.kiosk` como ID de instalação, evitando colisão com aplicativos privados.
 
-O código nativo retorna resultados estruturados ao Flutter. A camada Dart transforma falhas de plataforma em estados visíveis, evitando deixar o dispositivo preso em uma transição indefinida.
-
-## Permissões Android
-
-Este tipo de aplicativo exige permissões amplas e deve ser instalado somente em dispositivos dedicados e administrados:
-
-- `QUERY_ALL_PACKAGES` permite apresentar a lista de aplicativos instalados;
-- `RECEIVE_BOOT_COMPLETED` permite restaurar o launcher após a inicialização;
-- acesso ao uso de aplicativos auxilia o monitoramento em modo leve;
-- overlay e acessibilidade são opcionais e dependem de consentimento explícito no dispositivo;
-- serviços internos que não precisam receber chamadas externas permanecem com `exported="false"`.
-
-Essas permissões devem ser reavaliadas para qualquer distribuição em loja. A versão de portfólio não coleta telemetria e não realiza chamadas de rede.
+Serviços que não precisam receber chamadas externas permanecem com `exported="false"`. O overlay é obrigatório para iniciar o modo leve e viabilizar o gesto secreto de desbloqueio; acessibilidade é opcional. Ambas as permissões dependem de consentimento explícito no dispositivo.
 
 ## Como executar
 
-Pré-requisitos:
-
-- Flutter estável compatível com o SDK declarado;
-- Android SDK;
-- dispositivo ou emulador Android.
+Pré-requisitos: Flutter compatível com o SDK declarado, Android SDK e dispositivo ou emulador Android.
 
 ```bash
 flutter pub get
@@ -65,34 +51,31 @@ flutter test
 flutter run
 ```
 
-Para gerar uma demonstração Android local:
+Para gerar um APK demonstrativo:
 
 ```bash
 flutter build apk --debug
 ```
 
-A configuração de release do projeto usa assinatura de debug apenas para facilitar avaliação local. Ela não é uma assinatura de distribuição.
+A configuração de release também usa a chave de debug exclusivamente para avaliação local; ela não serve para distribuição. A permissão `INTERNET` presente nos manifests de debug/profile pertence ao tooling Flutter e não representa um cliente de rede implementado pelo aplicativo.
 
-## Limitações
+## Testes e validação
 
-- Sem Device Owner, o Android não oferece bloqueio absoluto.
-- Permissões especiais precisam ser concedidas manualmente.
-- Fabricantes podem impor comportamentos diferentes de gerenciamento de energia e launcher.
-- O projeto não substitui uma solução MDM.
-- A edição pública não inclui suporte, backend ou configuração de ambiente real.
+Os testes cobrem transições de estado, validação de pacote, integração do canal nativo, PIN e widgets. O pipeline de portfólio exporta somente caminhos permitidos, valida hashes, rejeita arquivos inesperados e executa verificações de segredos antes da publicação controlada.
 
-## Decisões e desafios técnicos
+## Limitações e segurança
 
-- separar falhas nativas de regras de interface;
-- manter um fallback leve quando Device Owner não existe;
-- proteger o PIN sem armazenar texto puro;
-- evitar loops de recuperação que prejudiquem o usuário;
-- tornar permissões e limitações visíveis em vez de ocultá-las.
+- O modo leve não impede de forma absoluta o acesso ao sistema; a solução não substitui Device Owner nem um MDM.
+- Permissões especiais precisam ser concedidas manualmente e fabricantes podem alterar o comportamento de energia, launcher e serviços.
+- O armazenamento nativo atual persiste somente hash, salt e versão do PIN. Ao carregar esse registro, `failedAttempts` volta a zero; como a interface o recarrega antes de cada envio, tentativas inválidas não se acumulam e o bloqueio por limite não é alcançado pelo fluxo normal.
+- Existe uma espera curta após cada entrada inválida, mas ela não constitui limitação de tentativas persistente. Reabrir ou reiniciar o aplicativo também restaura o estado.
+- A derivação do PIN usa uma rotina demonstrativa baseada em SHA-256 repetido. Ela não foi projetada nem auditada como armazenamento de credenciais para produção.
+- Não existe backend, telemetria, suporte remoto ou configuração empresarial nesta edição.
 
-## Minha participação
+Essas limitações são mantidas de forma explícita porque o objetivo deste repositório é demonstrar arquitetura Flutter/Android, tratamento de estados e integração nativa — não apresentar um controle de segurança pronto para implantação real.
 
-Projeto, arquitetura, implementação Flutter e Kotlin, testes automatizados, tratamento de estados de falha e documentação técnica.
+## Autoria e direitos
 
-## Direitos e contribuições
+Projeto, arquitetura, implementação Flutter/Kotlin, testes e documentação: Junior Barz. Consulte [PORTFOLIO_NOTICE.md](PORTFOLIO_NOTICE.md).
 
-Consulte [PORTFOLIO_NOTICE.md](PORTFOLIO_NOTICE.md). Este repositório é apresentado para avaliação profissional e não recebe Issues, Pull Requests ou suporte externo.
+O repositório é apresentado somente para leitura e avaliação profissional. Não recebe Issues, Pull Requests ou suporte externo.
